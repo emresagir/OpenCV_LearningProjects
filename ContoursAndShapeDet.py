@@ -1,8 +1,15 @@
 from cv2 import cv2 as cv
-import numpy as np
+import numpy as np 
 
-def empty(a):
-    pass
+def rescaleFrame(frame, scale = 0.4):
+
+
+    widht = int(frame.shape[1] * scale)
+
+    height = int(frame.shape[0] * scale)
+    dimensions = (widht, height)
+
+    return cv.resize(frame, dimensions, interpolation=cv.INTER_AREA)
 
 def stackImages(scale,imgArray):
     rows = len(imgArray)
@@ -35,41 +42,40 @@ def stackImages(scale,imgArray):
         ver = hor
     return ver
 
+def getContours(frame, oriFrame):
+    contours, hierarchy = cv.findContours(frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    for cnt in contours:
+        area = cv.contourArea(cnt)
+        if area > 500:
+            cv.drawContours(oriFrame, cnt, -1, (0,0,255), 2)
+            peri = cv.arcLength(cnt, True)
+            approx = cv.approxPolyDP(cnt, 0.02*peri, True) #need expl.
+            objCor = len(approx)
+            x, y, w, h = cv.boundingRect(approx)
 
-cv.namedWindow("TrackBars")
-cv.resizeWindow("TrackBars",640,240)
-cv.createTrackbar("Hue Min","TrackBars",0,179,empty)
-cv.createTrackbar("Hue Max","TrackBars",179,179,empty)
-cv.createTrackbar("Sat Min","TrackBars",194,255,empty)
-cv.createTrackbar("Sat Max","TrackBars",255,255,empty)
-cv.createTrackbar("Val Min","TrackBars",0,255,empty)
-cv.createTrackbar("Val Max","TrackBars",255,255,empty)
+            if objCor == 3: objectType = "Tri"
+            elif objCor == 4: objectType = "Rect"
+            elif objCor == 5: objectType = "Pent"
+            elif objCor == 6: objectType = "Hexa"
+            else: objectType = "Circle"
 
-while True:
-    img = cv.imread("Photos\square.jfif")
-
-    imgHSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-    h_min = cv.getTrackbarPos("Hue Min", "TrackBars")
-    h_max = cv.getTrackbarPos("Hue Max", "TrackBars")
-    s_min = cv.getTrackbarPos("Sat Min", "TrackBars")
-    s_max = cv.getTrackbarPos("Sat Max", "TrackBars")
-    v_min = cv.getTrackbarPos("Val Min", "TrackBars")
-    v_max = cv.getTrackbarPos("Val Max", "TrackBars")
- 
-    print(h_min, h_max, s_min, s_max, v_min, v_max)
-    lower = np.array([h_min, s_min, h_min])
-    upper = np.array([h_max, s_max, v_max])
-    mask = cv.inRange(imgHSV, lower, upper)
-    imgResult = cv.bitwise_and(img, img, mask=mask)
+            cv.rectangle(oriFrame, (x,y), (x+w, y+h), (255,0,0), 2)
+            cv.putText(oriFrame, objectType, (x + (w//2) - 10, y + (h//2) - 10), cv.FONT_HERSHEY_COMPLEX, 0.5, (0,0,255), 2)
 
 
-    #cv.imshow("Img", img)
-    #cv.imshow("ImgHSV", imgHSV)
-    #cv.imshow("Masked", mask)
-    #cv.imshow("Result", imgResult)
+            
 
-    imgStack = stackImages(0.6,([img,imgHSV],[mask,imgResult]))
-    cv.imshow("StacedImages", imgStack)
+img = cv.imread("Photos\shapes.png")
+img = rescaleFrame(img)
 
-    cv.waitKey(1)
+imgGray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+imgBlur = cv.GaussianBlur(imgGray, (7, 7), 1)
+imgCanny = cv.Canny(imgBlur, 50, 50)
+getContours(imgCanny, img)
 
+
+
+imgStack = stackImages(1, ([img, imgGray],[imgBlur, imgCanny]))
+cv.imshow("Stack", imgStack)
+
+cv.waitKey(0)
