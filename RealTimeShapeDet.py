@@ -59,7 +59,7 @@ while True:
     mask = cv.inRange(frameHSV, lower, upper)
     imgResult = cv.bitwise_and(frame, frame, mask=mask)
 
-    imgResultCanny = cv.Canny(imgResult, 50,50)
+    imgResultCanny = cv.Canny(imgResult, 90,90)
 
     getContours(imgResultCanny, frame)
 

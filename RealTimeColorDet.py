@@ -44,7 +44,7 @@ while True:
     cv.imshow('Video', frame)
     cv.imshow("HSV", frameHSV)
     cv.imshow("Result", imgResult)
-    if cv.waitKey(20) & 0xFF == ord('d'):
+    if cv.waitKey(33) == ord('q'):
         break
 
 capture.release()
